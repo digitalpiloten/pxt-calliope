@@ -114,8 +114,12 @@ enum IconNames {
     //% jres=icons.quarternote
     QuarterNote,
     //% block="eigth note"
-    //% jres=icons.eigthnote
+    //% jres=icons.eighthnote
+    //% deprecated=true blockHidden=true
     EigthNote,
+    //% block="eighth note"
+    //% jres=icons.eighthnote
+    EighthNote,
     //% block="pitchfork"
     //% jres=icons.pitchfork
     Pitchfork,
@@ -196,17 +200,20 @@ namespace basic {
     /**
      * Draws the selected icon on the LED screen
      * @param icon the predefined icon id
-     * @param interval the amount of time (milliseconds) to show the icon. Default is 600.
+     * @param interval the amount of time (milliseconds) to block the LED Matrix for showing the icon. Default is 600.
      */
     //% weight=90 blockGap=8
     //% blockId=basic_show_icon
-    //% block="show icon %i" icon="\uf00a"
+    //% block="show icon %i || for %interval ms" icon="\uf00a"
     //% parts="ledmatrix"
     //% help=basic/show-icon
     //% icon.fieldEditor="imagedropdown"
     //% icon.fieldOptions.columns="5"
     //% icon.fieldOptions.width="380"
     //% icon.fieldOptions.maxRows=4
+    //% expandableArgumentMode="toggle"
+    //% interval.defl=600
+    //% group="LED matrix"
     export function showIcon(icon: IconNames, interval = 600) {
         let res = images.iconImage(icon)
         res.showImage(0, interval)
@@ -220,6 +227,7 @@ namespace basic {
     //% weight=50 blockGap=8
     //% blockId=basic_show_arrow
     //% block="show arrow %i=device_arrow"
+    //% direction.label="direction"
     //% parts="ledmatrix"
     //% advanced=true
     //% help=basic/show-arrow
@@ -533,6 +541,12 @@ namespace images {
                                         . . # . .
                                         . . # . .
                                         . . # . .
+                                        # # # . .
+                                        # # # . .`);
+            case IconNames.EighthNote: return images.createImage(`
+                                        . . # . .
+                                        . . # # .
+                                        . . # . #
                                         # # # . .
                                         # # # . .`);
             case IconNames.EigthNote: return images.createImage(`

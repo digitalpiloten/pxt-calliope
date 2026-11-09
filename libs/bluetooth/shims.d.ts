@@ -80,11 +80,12 @@ declare namespace bluetooth {
      * @param delimiters the characters to match received characters against.
      */
     //% help=bluetooth/on-uart-data-received
-    //% weight=18 blockId=bluetooth_on_data_received block="bluetooth|on data received %delimiters=serial_delimiter_conv" shim=bluetooth::onUartDataReceived
+    //% weight=18 blockId=bluetooth_on_data_received block="bluetooth|on data received %delimiters=serial_delimiter_conv"
+    //% delimiters.label="delimiter" shim=bluetooth::onUartDataReceived
     function onUartDataReceived(delimiters: string, body: () => void): void;
 
     /**
-     * Register code to run when the micro:bit is connected to over Bluetooth
+     * Register code to run when the Calliope mini is connected to over Bluetooth
      * @param body Code to run when a Bluetooth connection is established
      */
     //% help=bluetooth/on-bluetooth-connected weight=20
@@ -93,7 +94,7 @@ declare namespace bluetooth {
     function onBluetoothConnected(body: () => void): void;
 
     /**
-     * Register code to run when a bluetooth connection to the micro:bit is lost
+     * Register code to run when a bluetooth connection to the Calliope mini is lost
      * @param body Code to run when a Bluetooth connection is lost
      */
     //% help=bluetooth/on-bluetooth-disconnected weight=19
@@ -108,8 +109,10 @@ declare namespace bluetooth {
      * @param connectable true to keep bluetooth connectable for other services, false otherwise.
      */
     //% blockId=eddystone_advertise_url block="bluetooth advertise url %url|with power %power|connectable %connectable"
+    //% url.label="url" power.label="power" connectable.label="connectable"
     //% parts=bluetooth weight=11 blockGap=8
-    //% help=bluetooth/advertise-url blockExternalInputs=1 shim=bluetooth::advertiseUrl
+    //% help=bluetooth/advertise-url blockExternalInputs=1
+    //% hidden=1 deprecated=1 shim=bluetooth::advertiseUrl
     function advertiseUrl(url: string, power: int32, connectable: boolean): void;
 
     /**
@@ -118,7 +121,7 @@ declare namespace bluetooth {
      * @param power power level between 0 and 7, eg: 7
      * @param connectable true to keep bluetooth connectable for other services, false otherwise.
      */
-    //% parts=bluetooth weight=12 advanced=true shim=bluetooth::advertiseUidBuffer
+    //% parts=bluetooth weight=12 advanced=true deprecated=1 shim=bluetooth::advertiseUidBuffer
     function advertiseUidBuffer(nsAndInstance: Buffer, power: int32, connectable: boolean): void;
 
     /**
@@ -126,7 +129,8 @@ declare namespace bluetooth {
      * @param power power level between 0 (minimal) and 7 (maximum), eg: 7.
      */
     //% parts=bluetooth weight=5 help=bluetooth/set-transmit-power advanced=true
-    //% blockId=bluetooth_settransmitpower block="bluetooth set transmit power %power" shim=bluetooth::setTransmitPower
+    //% blockId=bluetooth_settransmitpower block="bluetooth set transmit power %power"
+    //% power.label="value" shim=bluetooth::setTransmitPower
     function setTransmitPower(power: int32): void;
 
     /**
@@ -134,7 +138,8 @@ declare namespace bluetooth {
      */
     //% blockId=eddystone_stop_advertising block="bluetooth stop advertising"
     //% parts=bluetooth weight=10
-    //% help=bluetooth/stop-advertising advanced=true shim=bluetooth::stopAdvertising
+    //% help=bluetooth/stop-advertising advanced=true
+    //% hidden=1 deprecated=1 shim=bluetooth::stopAdvertising
     function stopAdvertising(): void;
 }
 

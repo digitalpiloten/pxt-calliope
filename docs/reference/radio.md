@@ -16,14 +16,13 @@ radio.setGroup(0);
 ## Advanced
 
 ```cards
-radio.writeReceivedPacketToSerial();
 radio.setTransmitPower(7);
 radio.setTransmitSerialNumber(false);
 radio.raiseEvent(0, 0);
 ```
 
 ```package
-radio
+funk
 ```
 
 ## See Also
@@ -38,5 +37,4 @@ radio
 [set group](/reference/radio/set-group),
 [set transmit power](/reference/radio/set-transmit-power),
 [set transmit serial number](/reference/radio/set-transmit-serial-number),
-[write received packet to serial](/reference/radio/write-received-packet-to-serial),
 [raise event](/reference/radio/raise-event)

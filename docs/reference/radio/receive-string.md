@@ -5,13 +5,13 @@ Find the next string sent by radio from another @boardname@.
 ```sig
 radio.receiveString()
 ```
-## ~ hint
+### ~ alert
 
-**Deprecated**
+#### Deprecated
 
 This API has been deprecated! Use [on received string](/reference/radio/on-received-string) instead.
 
-## ~
+### ~
 
 ## Returns
 
@@ -34,7 +34,7 @@ If you load this program onto two or more @boardname@s, you can send a code word
 The other @boardname@s will receive the code word and then show it.
 
 ```blocks
-input.onButtonPressed(Button.A, () => {
+input.onButtonEvent(Button.A, input.buttonEventClick(), () => {
     radio.sendString("Codeword: TRIMARAN")
     basic.showString("SENT");
 })
@@ -59,10 +59,10 @@ This program will also receive your friend's mood.
 
 ```blocks
 let data: string = "";
-input.onButtonPressed(Button.A, () => {
+input.onButtonEvent(Button.A, input.buttonEventClick(), () => {
     radio.sendString("H");
 });
-input.onButtonPressed(Button.B, () => {
+input.onButtonEvent(Button.B, input.buttonEventClick(), () => {
     radio.sendString("S");
 });
 radio.onDataReceived(() => {
@@ -94,5 +94,5 @@ radio.onDataReceived(() => {
 [send string](/reference/radio/send-string), [on data received](/reference/radio/on-data-received)
 
 ```package
-radio
+funk
 ```

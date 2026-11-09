@@ -40,9 +40,10 @@ namespace serial {
      * Print a line of text to the serial port
      * @param value to send over serial
      */
-    //% weight=90
+    //% weight=89
     //% help=serial/write-line blockGap=8
     //% blockId=serial_writeline block="serial|write line %text"
+    //% text.label="value"
     //% text.shadowOptions.toString=true
     export function writeLine(text: string): void {
         if (!text) text = "";
@@ -65,6 +66,7 @@ namespace serial {
     //% weight=1
     //% help=serial/set-write-line-padding
     //% blockId=serialWriteNewLinePadding block="serial set write line padding to $length"
+    //% length.label="value"
     //% advanced=true
     //% length.min=0 length.max=128
     export function setWriteLinePadding(length: number) {
@@ -75,8 +77,9 @@ namespace serial {
      * Print a numeric value to the serial port
      */
     //% help=serial/write-number
-    //% weight=89 blockGap=8
+    //% weight=87 blockGap=8
     //% blockId=serial_writenumber block="serial|write number %value"
+    //% value.label="value"
     export function writeNumber(value: number): void {
         writeString(value.toString());
     }
@@ -87,6 +90,7 @@ namespace serial {
     //% help=serial/write-numbers
     //% weight=86
     //% blockId=serial_writenumbers block="serial|write numbers %values"
+    //% values.label="value"
     export function writeNumbers(values: number[]): void {
         if (!values) return;
         for (let i = 0; i < values.length; ++i) {
@@ -101,9 +105,10 @@ namespace serial {
      * @param name name of the value stream, eg: x
      * @param value to write
      */
-    //% weight=88 blockGap=8
+    //% weight=90 blockGap=8
     //% help=serial/write-value
     //% blockId=serial_writevalue block="serial|write value %name|= %value"
+    //% name.label="name" value.label="value"
     export function writeValue(name: string, value: number): void {
         writeLine((name ? name + ":" : "") + value);
     }

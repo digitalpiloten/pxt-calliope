@@ -1,15 +1,14 @@
 /// <reference path="../node_modules/pxt-core/localtypings/pxtarget.d.ts" />
-/// <reference path="../node_modules/pxt-core/built/pxtblocks.d.ts" />
 /// <reference path="../node_modules/pxt-core/built/pxtcompiler.d.ts" />
 /// <reference path="../node_modules/pxt-core/built/pxtlib.d.ts" />
-/// <reference path="../node_modules/pxt-core/built/pxteditor.d.ts" />
+/// <reference path="../node_modules/pxt-core/localtypings/pxteditor.d.ts" />
 /// <reference path="dapjs.d.ts" />
-import * as dialogs from "./dialogs";
-import * as flash from "./flash";
+// import * as dialogs from "./dialogs";
+import * as hostLink from "./hostLink";
 import * as patch from "./patch";
 
 pxt.editor.initExtensionsAsync = function (opts: pxt.editor.ExtensionOptions): Promise<pxt.editor.ExtensionResult> {
-    pxt.debug('loading microbit target extensions...')
+    pxt.debug('loading calliope mini target extensions...')
 
     const manyAny = Math as any;
     if (!manyAny.imul)
@@ -24,35 +23,32 @@ pxt.editor.initExtensionsAsync = function (opts: pxt.editor.ExtensionOptions): P
         };
 
     const res: pxt.editor.ExtensionResult = {
-        hexFileImporters: [{
-            id: "blockly",
-            canImport: data => data.meta.cloudId == "microbit.co.uk" && data.meta.editor == "blockly",
-            importAsync: (project, data) => {
-                pxt.tickEvent('import.legacyblocks.redirect');
-                return dialogs.cantImportAsync(project);
-            }
-        }, {
-            id: "td",
-            canImport: data => data.meta.cloudId == "microbit.co.uk" && data.meta.editor == "touchdevelop",
-            importAsync: (project, data) => {
-                pxt.tickEvent('import.legacytd.redirect');
-                return dialogs.cantImportAsync(project);
-            }
-        }]
+        hexFileImporters: []
     };
 
     pxt.usb.setFilters([{
-        vendorId: 0x1366,
-        productId: 0x1025
-    },
-    {
         vendorId: 0x0D28,
-        productId: 0x0204
+        productId: 0x0204,
+        classCode: 0xff,
+        subclassCode: 0x03 // the ctrl pipe endpoint
+    }, {
+        vendorId: 0x0D28,
+        productId: 0x0204,
+        classCode: 0xff,
+        subclassCode: 0x00 // the custom CMSIS2 endpoint
+    }, {
+        vendorId: 0x1366, // Segger
+        productId: 0x1015 // Mini 2.0
+    }, {
+        vendorId: 0x1366, // Segger
+        productId: 0x1025 // Mini 2.1
+    }, {
+        vendorId: 0x1366 // Segger
     }])
 
-    res.mkPacketIOWrapper = flash.mkDAPLinkPacketIOWrapper;
+    res.mkPacketIOWrapper = hostLink.mkPacketIOWrapper;
+    hostLink.initHostLink();
     res.blocklyPatch = patch.patchBlocks;
-    res.renderBrowserDownloadInstructions = dialogs.renderBrowserDownloadInstructions;
-    res.renderUsbPairDialog = dialogs.renderUsbPairDialog;
+    // res.showProgramTooLargeErrorAsync = dialogs.showProgramTooLargeErrorAsync;
     return Promise.resolve<pxt.editor.ExtensionResult>(res);
 }

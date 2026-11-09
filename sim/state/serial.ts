@@ -3,6 +3,17 @@ namespace pxsim {
     export class SerialState {
         serialIn: string[] = [];
 
+        constructor(private readonly runtime: Runtime, private readonly board: BaseBoard) {
+            this.board.addMessageListener(this.handleMessage.bind(this))
+        }
+
+        private handleMessage(msg: SimulatorMessage) {
+            if (msg.type === "serial") {
+                const data = (<SimulatorSerialMessage>msg).data || "";
+                this.receiveData(data);
+            }
+        }
+
         public receiveData(data: string) {
             this.serialIn.push();
         }
@@ -25,12 +36,16 @@ namespace pxsim {
                 this.serialOutBuffer = '';
             }
         }
-    }
-}
 
-namespace pxsim.control {
-    export function __log(s: string) {
-        board().writeSerial(s + "\r\n");
+        writeCsv(s: string, type: "headers" | "row" | "clear") {
+            Runtime.postMessage(<SimulatorSerialMessage>{
+                type: 'serial',
+                data: s,
+                id: runtime.id,
+                csvType: type,
+                sim: true
+            })
+        }
     }
 }
 
@@ -80,6 +95,10 @@ namespace pxsim.serial {
     }
 
     export function setBaudRate(rate: number) {
+        // TODO
+    }
+
+    export function writeDmesg() {
         // TODO
     }
 }

@@ -5,14 +5,36 @@
 // make sure USB_TX and USB_RX don't overlap with other pin ids
 // also, 1001,1002 need to be kept in sync with getPin() function
 enum SerialPin {
-    P0 = MICROBIT_ID_IO_P12,
-    P1 = MICROBIT_ID_IO_P0,
-    P2 = MICROBIT_ID_IO_P1,
-    P3 = MICROBIT_ID_IO_P16,
-    C16 = MICROBIT_ID_IO_P2,
-    C17 = MICROBIT_ID_IO_P8,
+    P0 = MICROBIT_ID_IO_P0,
+    P1 = MICROBIT_ID_IO_P1,
+    P2 = MICROBIT_ID_IO_P2,
+    P3 = MICROBIT_ID_IO_P3,
+
+    C8 = MICROBIT_ID_IO_P8,
+    C12 = MICROBIT_ID_IO_P12,
+    C13 = MICROBIT_ID_IO_P13,
+    C14 = MICROBIT_ID_IO_P14,
+    C15 = MICROBIT_ID_IO_P15,
+    C16 = MICROBIT_ID_IO_A1_RX,
+    C17 = MICROBIT_ID_IO_A1_TX,
+    
     USB_TX = 1001,
-    USB_RX = 1002
+    USB_RX = 1002,
+
+    //% blockHidden=true
+    P8 = MICROBIT_ID_IO_P8,
+    //% blockHidden=true
+    P12 = MICROBIT_ID_IO_P12,
+    //% blockHidden=true
+    P13 = MICROBIT_ID_IO_P13,
+    //% blockHidden=true
+    P14 = MICROBIT_ID_IO_P14,
+    //% blockHidden=true
+    P15 = MICROBIT_ID_IO_P15,
+    //% blockHidden=true
+    P16 = MICROBIT_ID_IO_A1_RX,
+    //% blockHidden=true
+    P17 = MICROBIT_ID_IO_A1_TX
 };
 
 enum BaudRate {
@@ -43,6 +65,10 @@ enum BaudRate {
 //% weight=2 color=#002050 icon="\uf287"
 //% advanced=true
 namespace serial {
+#if MICROBIT_CODAL
+    bool is_redirected;
+#endif
+
     // note that at least one // followed by % is needed per declaration!
 
     /**
@@ -51,6 +77,7 @@ namespace serial {
      */
     //% help=serial/read-until
     //% blockId=serial_read_until block="serial|read until %delimiter=serial_delimiter_conv"
+    //% delimiter.label="delimiter"
     //% weight=19
     String readUntil(String delimiter) {
       return PSTR(uBit.serial.readUntil(MSTR(delimiter)));
@@ -74,6 +101,7 @@ namespace serial {
     */
     //% help=serial/on-data-received
     //% weight=18 blockId=serial_on_data_received block="serial|on data received %delimiters=serial_delimiter_conv"
+    //% delimiters.label="delimiter"
     void onDataReceived(String delimiters, Action body) {
       uBit.serial.eventOn(MSTR(delimiters));
       registerWithDal(MICROBIT_ID_SERIAL, MICROBIT_SERIAL_EVT_DELIM_MATCH, body);
@@ -85,8 +113,9 @@ namespace serial {
      * Send a piece of text through the serial connection.
      */
     //% help=serial/write-string
-    //% weight=87 blockGap=8
+    //% weight=88 blockGap=8
     //% blockId=serial_writestring block="serial|write string %text"
+    //% text.label="value"
     //% text.shadowOptions.toString=true
     void writeString(String text) {
       if (!text) return;
@@ -98,6 +127,7 @@ namespace serial {
     * Send a buffer through serial connection
     */
     //% blockId=serial_writebuffer block="serial|write buffer %buffer=serial_readbuffer"
+    //% buffer.label="value"
     //% help=serial/write-buffer advanced=true weight=6
     void writeBuffer(Buffer buffer) {
       if (!buffer) return;
@@ -106,24 +136,30 @@ namespace serial {
     }
 
     /**
-    * Read multiple characters from the receive buffer. Pause until enough characters are present.
-    * @param length default buffer length, eg: 64
+    * Read multiple characters from the receive buffer.
+    * If length is positive, pauses until enough characters are present.
+    * @param length default buffer length
     */
     //% blockId=serial_readbuffer block="serial|read buffer %length"
+    //% length.label="value"
     //% help=serial/read-buffer advanced=true weight=5
     Buffer readBuffer(int length) {
-      if (length <= 0)
-        length = MICROBIT_SERIAL_READ_BUFFER_LENGTH;
-
-      auto buf = mkBuffer(NULL, length);
-      int read = uBit.serial.read(buf->data, buf->length);
-      if (read != length) {
-        auto prev = buf;
-        buf = mkBuffer(buf->data, read);
-        decrRC(prev);
+      auto mode = SYNC_SLEEP;
+      if (length <= 0) {
+        length = uBit.serial.getRxBufferSize();
+        mode = ASYNC;
       }
 
-      return buf;
+      auto buf = mkBuffer(NULL, length);
+      auto res = buf;
+      registerGCObj(buf); // make sure buffer is pinned, while we wait for data
+      int read = uBit.serial.read(buf->data, buf->length, mode);
+      if (read != length) {
+        res = mkBuffer(buf->data, read);
+      }
+      unregisterGCObj(buf);
+
+      return res;
     }
 
     bool tryResolvePin(SerialPin p, PinName& name) {
@@ -132,8 +168,8 @@ namespace serial {
         case SerialPin::USB_TX: name = USBTX; return true;
         case SerialPin::USB_RX: name = USBRX; return true;
 #endif
-        default: 
-          auto pin = getPin(p); 
+        default:
+          auto pin = getPin(p);
           if (NULL != pin) {
             name = (PinName)pin->name;
             return true;
@@ -159,8 +195,10 @@ namespace serial {
     //% blockGap=8
     void redirect(SerialPin tx, SerialPin rx, BaudRate rate) {
 #if MICROBIT_CODAL
-      if (getPin(tx) && getPin(rx))
+      if (getPin(tx) && getPin(rx)) {
         uBit.serial.redirect(*getPin(tx), *getPin(rx));
+        is_redirected = 1;
+      }
       uBit.serial.setBaud(rate);
 #else
       PinName txn;
@@ -169,6 +207,22 @@ namespace serial {
         uBit.serial.redirect(txn, rxn);
       uBit.serial.baud((int)rate);
 #endif
+    }
+
+    //%
+    int redirectWithStatus(SerialPin tx, SerialPin rx) {
+#if MICROBIT_CODAL
+      if (getPin(tx) && getPin(rx)) {
+        is_redirected = 1;
+        return uBit.serial.redirect(*getPin(tx), *getPin(rx));
+      }
+#else
+      PinName txn;
+      PinName rxn;
+      if (tryResolvePin(tx, txn) && tryResolvePin(rx, rxn))
+        return uBit.serial.redirect(txn, rxn);
+#endif
+      return MICROBIT_INVALID_PARAMETER;
     }
 
     /**
@@ -195,6 +249,7 @@ namespace serial {
     //% blockId=serial_redirect_to_usb block="serial|redirect to USB"
     void redirectToUSB() {
 #if MICROBIT_CODAL
+      is_redirected = false;
       uBit.serial.redirect(uBit.io.usbTx, uBit.io.usbRx);
       uBit.serial.setBaud(115200);
 #else
@@ -209,6 +264,7 @@ namespace serial {
     */
     //% help=serial/set-rx-buffer-size
     //% blockId=serialSetRxBufferSize block="serial set rx buffer size to $size"
+    //% size.label="value"
     //% advanced=true
     void setRxBufferSize(uint8_t size) {
       uBit.serial.setRxBufferSize(size);
@@ -220,8 +276,32 @@ namespace serial {
     */
     //% help=serial/set-tx-buffer-size
     //% blockId=serialSetTxBufferSize block="serial set tx buffer size to $size"
+    //% size.label="value"
     //% advanced=true
     void setTxBufferSize(uint8_t size) {
       uBit.serial.setTxBufferSize(size);
     }
+
+     /** Send DMESG debug buffer over serial. */
+    //%
+    void writeDmesg() {
+        pxt::dumpDmesg();
+    }
+}
+
+namespace pxt {
+
+static void sendString(const char *c, int len) {
+  while (len--)
+    uBit.serial.putc(*c++);
+}
+
+void dumpDmesg() {
+#if MICROBIT_CODAL
+    if (serial::is_redirected)
+      return;
+    microbit_dmesg_flush();
+#endif
+}
+
 }

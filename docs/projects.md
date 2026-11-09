@@ -3,27 +3,33 @@
 ```codecard
 [
     {
-        "name": "First Steps",
-        "url": "/calliope/firststeps",
-        "imageUrl": "/calliope/firststeps/connecting.jpg",
-        "largeImageUrl": "/calliope/firststeps/firstSteps.jpg"
-    },
-    {
         "name": "Tutorials",
         "url": "/calliope/tutorials",
-        "imageUrl": "/calliope/tutorials/01_flashing_heart.gif"
+        "imageUrl": "/static/calliope/tutorials/01_flashing_heart.gif"
+    },
+    {
+        "name": "Workbook",
+        "url": "/calliope/arbeitsheft",
+        "imageUrl": "/static/calliope/arbeitsheft/calliope_arbeitsheft_makecode.png",
+        "largeImageUrl": "/static/calliope/arbeitsheft/EN/18-4_led-matrix.png"
+    },
+    {
+        "name": "Jacdac",
+        "url": "/calliope/jacdac",
+        "imageUrl": "/static/calliope/jacdac/jacdac-vorschau.png"
     },
     {
         "name": "Calliope Links",
         "url": "/calliope/links",
-        "imageUrl": "/calliope/links/thumbnail_shop.gif"
+        "imageUrl": "/static/calliope/links/EN/calliope_pr_makecode.png"
     }
 ]
 ```
 
 ## See Also
 
-[First Steps](/calliope/firststeps),
 [Tutorials](/calliope/tutorials),
+[Workbook](/calliope/arbeitsheft),
+[Jacdac](/calliope/jacdac),
 [Calliope Links](/calliope/links)
 

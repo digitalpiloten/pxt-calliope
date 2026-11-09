@@ -1,50 +1,374 @@
-/**
- *       <block type="device_show_leds">
-    <field name="LED00">FALSE</field>
-    <field name="LED10">FALSE</field>
-    <field name="LED20">FALSE</field>
-    <field name="LED30">FALSE</field>
-    <field name="LED40">FALSE</field>
-    <field name="LED01">FALSE</field>
-    <field name="LED11">FALSE</field>
-    <field name="LED21">FALSE</field>
-    <field name="LED31">TRUE</field>
-    <field name="LED41">FALSE</field>
-    <field name="LED02">FALSE</field>
-    <field name="LED12">FALSE</field>
-    <field name="LED22">FALSE</field>
-    <field name="LED32">FALSE</field>
-    <field name="LED42">FALSE</field>
-    <field name="LED03">FALSE</field>
-    <field name="LED13">TRUE</field>
-    <field name="LED23">FALSE</field>
-    <field name="LED33">FALSE</field>
-    <field name="LED43">FALSE</field>
-    <field name="LED04">FALSE</field>
-    <field name="LED14">FALSE</field>
-    <field name="LED24">FALSE</field>
-    <field name="LED34">FALSE</field>
-    <field name="LED44">FALSE</field>
-  </block>
- 
-  to
-<block type="device_show_leds">
-    <field name="LEDS">`
-    # # # # #
-    . . . . #
-    . . . . .
-    . . . . #
-    . . . . #
-    `
-    </field>
-  </block>
- */
 
 export function patchBlocks(pkgTargetVersion: string, dom: Element) {
+
+    if (pxt.semver.majorCmp(pkgTargetVersion || "0.0.0", "7.0.0") <= 0) {
+        // Variable pin param
+        /*
+        <block type="device_get_digital_pin">
+            <field name="name">DigitalPin.P0</field>
+        </block>
+
+        converts to
+
+        <block type="device_get_digital_pin">
+            <value name="name">
+                <shadow type="digital_pin">
+                    <field name="pin">DigitalPin.P0</field>
+                </shadow>
+            </value>
+        </block>
+        */
+        pxt.U.toArray(dom.querySelectorAll("block[type=device_get_digital_pin]"))
+            .concat(pxt.U.toArray(dom.querySelectorAll("shadow[type=device_get_digital_pin]")))
+            .concat(pxt.U.toArray(dom.querySelectorAll("block[type=device_set_digital_pin]")))
+            .concat(pxt.U.toArray(dom.querySelectorAll("block[type=device_get_analog_pin]")))
+            .concat(pxt.U.toArray(dom.querySelectorAll("shadow[type=device_get_analog_pin]")))
+            .concat(pxt.U.toArray(dom.querySelectorAll("block[type=device_set_analog_pin]")))
+            .concat(pxt.U.toArray(dom.querySelectorAll("block[type=device_set_analog_period]")))
+            .concat(pxt.U.toArray(dom.querySelectorAll("block[type=pins_pulse_in]")))
+            .concat(pxt.U.toArray(dom.querySelectorAll("shadow[type=pins_pulse_in]")))
+            .concat(pxt.U.toArray(dom.querySelectorAll("block[type=device_set_servo_pin]")))
+            .concat(pxt.U.toArray(dom.querySelectorAll("block[type=device_set_servo_pulse]")))
+            .concat(pxt.U.toArray(dom.querySelectorAll("block[type=device_analog_set_pitch_pin]")))
+            .concat(pxt.U.toArray(dom.querySelectorAll("block[type=device_set_pull]")))
+            .concat(pxt.U.toArray(dom.querySelectorAll("block[type=device_set_pin_events]")))
+            .concat(pxt.U.toArray(dom.querySelectorAll("block[type=pin_neopixel_matrix_width]")))
+            .concat(pxt.U.toArray(dom.querySelectorAll("block[type=spi_pins]")))
+            .concat(pxt.U.toArray(dom.querySelectorAll("block[type=pin_set_audio_pin]")))
+            .forEach(node => {
+                const blockType = node.getAttribute("type");
+                pxt.U.toArray(node.children)
+                    .filter(oldPinNode => {
+                        if (oldPinNode.tagName != "field") return false;
+                        switch (blockType) {
+                            case "device_get_digital_pin":
+                            case "device_set_digital_pin":
+                            case "device_get_analog_pin":
+                            case "device_set_analog_pin":
+                            case "pins_pulse_in":
+                            case "device_set_servo_pin":
+                            case "device_analog_set_pitch_pin":
+                            case "pin_set_audio_pin":
+                                return oldPinNode.getAttribute("name") === "name";
+                            case "device_set_analog_period":
+                            case "device_set_pull":
+                            case "device_set_pin_events":
+                            case "pin_neopixel_matrix_width":
+                                return oldPinNode.getAttribute("name") === "pin";
+                            case "device_set_servo_pulse":
+                                return oldPinNode.getAttribute("name") === "value";
+                            case "spi_pins":
+                                return ["mosi", "miso", "sck"].includes(oldPinNode.getAttribute("name"));
+                        }
+                        return false;
+                    })
+                    .forEach(oldPinNode => {
+                        const valueNode = node.ownerDocument.createElement("value");
+                        valueNode.setAttribute("name", oldPinNode.getAttribute("name"));
+
+                        let nodeText = oldPinNode.textContent;
+                        const pinShadowNode = node.ownerDocument.createElement("shadow");
+                        const [enumName, pinName] = nodeText.split(".");
+
+                        let pinBlockType;
+                        switch (enumName) {
+                            case "DigitalPin":
+                                pinBlockType = "digital_pin_shadow";
+                                break;
+                            case "AnalogPin":
+                                pinBlockType = "analog_pin_shadow";
+                                break;
+                        }
+                        if (!pinBlockType) return;
+
+                        // If this is one of the read/write pins, narrow to the read write shadow
+                        if (blockType === "device_get_analog_pin") {
+                            switch (pinName) {
+                                case "P0":
+                                case "P1":
+                                case "P2":
+                                case "P4":
+                                case "C4":
+                                case "P10":
+                                case "C10":
+                                case "P16":
+                                case "C16":
+                                case "A1_RX":
+                                case "P18":
+                                case "C18":
+                                    pinBlockType = "analog_read_write_pin_shadow";
+                                    nodeText = `AnalogReadWritePin.${pinName}`;
+                                    break;
+                            }
+                        }
+
+                        pinShadowNode.setAttribute("type", pinBlockType);
+
+                        const fieldNode = node.ownerDocument.createElement("field");
+                        fieldNode.setAttribute("name", "pin");
+                        fieldNode.textContent = nodeText;
+
+                        pinShadowNode.appendChild(fieldNode);
+                        valueNode.appendChild(pinShadowNode);
+                        node.replaceChild(valueNode, oldPinNode);
+                    });
+            });
+
+    }
+
+    if (pxt.semver.majorCmp(pkgTargetVersion || "0.0.0", "5.0.0") >= 0) return;
+
+    // Motor Names mapping
+    pxt.U.toArray(dom.querySelectorAll('field[name="motor"]'))
+    .forEach(node => {
+        const motorValue = node.textContent.trim();
+        switch (motorValue) {
+            case 'Motor.A':
+                node.textContent = 'Motor.M0';
+                break;
+            case 'Motor.B':
+                node.textContent = 'Motor.M1';
+                break;
+            case 'Motor.AB':
+                node.textContent = 'Motor.M0_M1';
+                break;
+            // Add additional cases if needed for other motor values
+        }
+    });
+
+     // Sound level mapping
+     pxt.U.toArray(dom.querySelectorAll('block[type=device_get_sound_level]'))
+         .forEach(node => {
+             node.setAttribute('type', 'soundLevel');
+         });
+
+    if (pxt.semver.majorCmp(pkgTargetVersion || "0.0.0", "4.0.20") >= 0) return;
+            // button and pin pressed/released blocks
+        /*
+            <block type="device_button_event" x="354" y="30">
+                <field name="NAME">Button.A</field>
+            </block>
+            <block type="device_pin_event" x="610" y="33">
+                <field name="name">TouchPin.P0</field>
+            </block>
+            <block type="device_pin_released" x="361" y="158">
+                <field name="NAME">TouchPin.P1</field>
+            </block>
+
+            converts to
+
+            <block type="device_button_selected_event" x="35" y="429">
+                <field name="NAME">Button.B</field>
+                <value name="eventType">
+                    <shadow type="control_button_event_value">
+                        <field name="id">ButtonEvent.Click</field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="device_pin_custom_event" x="368" y="428">
+                <field name="NAME">TouchPin.P2</field>
+                <value name="eventType">
+                    <shadow type="control_button_event_value">
+                        <field name="id">ButtonEvent.Up</field>
+                    </shadow>
+                </value>
+            </block>
+        */
+        const inputNodes = pxt.U.toArray(dom.querySelectorAll("block[type=device_button_event]"))
+        .concat(pxt.U.toArray(dom.querySelectorAll("block[type=device_pin_event]")))
+        .concat(pxt.U.toArray(dom.querySelectorAll("block[type=device_pin_released]")))
+        inputNodes.forEach(node => {
+            const nodeType = node.getAttribute("type");
+            if(nodeType === "device_button_event") {
+                node.setAttribute("type", "device_button_selected_event");
+            } else {
+                node.setAttribute("type", "device_pin_custom_event");
+            }
+            // fix lowercase 'name'in device_pin_event
+            if(nodeType === "device_pin_event") {
+                node.querySelectorAll("field[name=name]")[0].setAttribute("name", "NAME")
+            }
+            const valueNode = node.ownerDocument.createElement("value");
+            valueNode.setAttribute("name", "eventType")
+
+            const shadowNode = node.ownerDocument.createElement("shadow");
+            shadowNode.setAttribute("type", "control_button_event_value")
+
+            const fieldNode = node.ownerDocument.createElement("field");
+            fieldNode.setAttribute("name", "id")
+
+            if(nodeType === "device_button_event") {
+                fieldNode.textContent = "ButtonEvent.Click";
+            } else if(nodeType === "device_pin_released") {
+                fieldNode.textContent = "ButtonEvent.Up";
+            } else {
+                fieldNode.textContent = "ButtonEvent.Down";
+            }
+
+            shadowNode.prepend(fieldNode)
+            valueNode.prepend(shadowNode)
+            node.prepend(valueNode)
+
+        });
+
+
+
+        // loudness
+            /*
+            <block type="loudness" />
+
+            converts to
+
+            <block type="soundLevel" />
+            */
+            const loudnessNodes = pxt.U.toArray(dom.querySelectorAll("block[type=loudness]"))
+            loudnessNodes.forEach(node => {
+                node.setAttribute("type", "soundLevel");
+            });
+
+            // rgbw to rgb block
+            const rgbwNodes = pxt.U.toArray(dom.querySelectorAll("block[type=core_rgbw]"))
+            rgbwNodes.forEach(node => {
+                node.setAttribute("type", "core_rgb");
+                node.querySelectorAll("value[name=white]")[0].remove();
+            }); 
+
+            // arrow blocks
+            /*
+        <block type="basic_show_arrow">
+            <value name="i">
+                <shadow type="device_arrow">
+                    <field name="arrow">ArrowNames.North</field>
+                </shadow>
+            </value>
+        </block>
+
+            converts to
+
+        <block type="basic_show_icon">
+            <mutation xmlns="http://www.w3.org/1999/xhtml" _expanded="0" _input_init="false"></mutation>
+            <field name="i">IconNames.ArrowNorth</field>
+        </block>
+            */
+        const arrowNodes = pxt.U.toArray(dom.querySelectorAll("block[type=basic_show_arrow]"))
+        arrowNodes.forEach(node => {
+            node.setAttribute("type", "basic_show_icon");
+            const arrowNode = node.querySelectorAll("value[name=i]")[0]
+            const iconName = "IconNames.Arrow" + arrowNode.querySelectorAll("field[name=arrow]")[0].textContent.split('.')[1];
+            
+            const iconNode = node.ownerDocument.createElement("field");
+            iconNode.setAttribute("name", "i")
+            iconNode.textContent  = iconName;
+
+            const mutationNode = node.ownerDocument.createElement("mutation");
+            // mutationNode.setAttribute("xmlns", "http://www.w3.org/1999/xhtml")
+            mutationNode.setAttribute("_expanded", "0")
+            mutationNode.setAttribute("_input_init", "false")
+
+            node.prepend(iconNode)
+            node.prepend(mutationNode)
+            node.removeChild(arrowNode);
+        });
+
+            // arrow icons
+            /*
+        <block type="builtin_arrow_image">
+            <field name="i">ArrowNames.East</field>
+        </block>
+
+            converts to
+
+        <block type="builtin_image">
+            <field name="i">IconNames.ArrowEast</field>
+        </block>
+            */
+        const arrowImageNodes = pxt.U.toArray(dom.querySelectorAll("block[type=builtin_arrow_image]"))
+        arrowImageNodes.forEach(node => {
+            node.setAttribute("type", "builtin_image");
+            const arrowNode = node.querySelectorAll("field[name=i]")[0];
+            arrowNode.textContent  = "IconNames.Arrow" + arrowNode.textContent.split('.')[1];
+        });
+
+    if (pxt.semver.majorCmp(pkgTargetVersion || "0.0.0", "5.0.12") <= 0) {
+
+        // Eighth note misspelling
+        /*
+        <block type="basic_show_icon">
+            <field name="i">IconNames.EigthNote</field>
+        </block>
+
+        converts to
+
+        <block type="basic_show_icon">
+            <field name="i">IconNames.EighthNote</field>
+        </block>
+        */
+        pxt.U.toArray(dom.querySelectorAll("block[type=basic_show_icon]>field[name=i]"))
+            .filter(node => node.textContent === "IconNames.EigthNote")
+            .forEach(node => node.textContent = "IconNames.EighthNote");
+
+        // Italian translation error
+        /*
+        <shadow type="device_note">
+            <field name="note">466</field>
+        </shadow>
+
+        converts to
+
+        <shadow type="device_note">
+            <field name="name">466</field>
+        </shadow>
+        */
+        pxt.U.toArray(dom.querySelectorAll("shadow[type=device_note]>field[name=note]"))
+            .forEach(node => node.setAttribute("name", "name"));
+    }
+
     // is this a old script?
     if (pxt.semver.majorCmp(pkgTargetVersion || "0.0.0", "1.0.0") >= 0) return;
 
     // showleds
+    /**
+    <block type="device_show_leds">
+        <field name="LED00">FALSE</field>
+        <field name="LED10">FALSE</field>
+        <field name="LED20">FALSE</field>
+        <field name="LED30">FALSE</field>
+        <field name="LED40">FALSE</field>
+        <field name="LED01">FALSE</field>
+        <field name="LED11">FALSE</field>
+        <field name="LED21">FALSE</field>
+        <field name="LED31">TRUE</field>
+        <field name="LED41">FALSE</field>
+        <field name="LED02">FALSE</field>
+        <field name="LED12">FALSE</field>
+        <field name="LED22">FALSE</field>
+        <field name="LED32">FALSE</field>
+        <field name="LED42">FALSE</field>
+        <field name="LED03">FALSE</field>
+        <field name="LED13">TRUE</field>
+        <field name="LED23">FALSE</field>
+        <field name="LED33">FALSE</field>
+        <field name="LED43">FALSE</field>
+        <field name="LED04">FALSE</field>
+        <field name="LED14">FALSE</field>
+        <field name="LED24">FALSE</field>
+        <field name="LED34">FALSE</field>
+        <field name="LED44">FALSE</field>
+    </block>
+
+    converts to
+
+    <block type="device_show_leds">
+        <field name="LEDS">`
+            . . . . .
+            . . . # .
+            . . . . .
+            . # . . .
+            . . . . .
+            `
+        </field>
+    </block>
+    */
     const nodes = pxt.U.toArray(dom.querySelectorAll("block[type=device_show_leds]"))
         .concat(pxt.U.toArray(dom.querySelectorAll("block[type=device_build_image]")))
         .concat(pxt.U.toArray(dom.querySelectorAll("shadow[type=device_build_image]")))
@@ -62,7 +386,7 @@ export function patchBlocks(pkgTargetVersion: string, dom: Element) {
                 let n = lednode.getAttribute("name");
                 let col = parseInt(n[3]);
                 let row = parseInt(n[4]);
-                leds[row][col] = lednode.innerHTML == "TRUE" ? "#" : ".";
+                leds[row][col] = lednode.textContent  == "TRUE" ? "#" : ".";
                 // remove node
                 node.removeChild(lednode);
             });
@@ -74,35 +398,37 @@ export function patchBlocks(pkgTargetVersion: string, dom: Element) {
         node.insertBefore(f, null);
     });
 
+
+
     // radio
     /*
-<block type="radio_on_packet" x="174" y="120">
-<mutation callbackproperties="receivedNumber" renamemap="{}"></mutation>
-<field name="receivedNumber">receivedNumber</field>
-</block>
-<block type="radio_on_packet" disabled="true" x="127" y="263">
-<mutation callbackproperties="receivedString,receivedNumber" renamemap="{&quot;receivedString&quot;:&quot;name&quot;,&quot;receivedNumber&quot;:&quot;value&quot;}"></mutation>
-<field name="receivedString">name</field>
-<field name="receivedNumber">value</field>
-</block>
-<block type="radio_on_packet" disabled="true" x="162" y="420">
-<mutation callbackproperties="receivedString" renamemap="{}"></mutation>
-<field name="receivedString">receivedString</field>
-</block>
- 
-converts to
- 
-<block type="radio_on_number" x="196" y="208">
-<field name="HANDLER_receivedNumber" id="DCy(W;1)*jLWQUpoy4Mm" variabletype="">receivedNumber</field>
-</block>
-<block type="radio_on_value" x="134" y="408">
-<field name="HANDLER_name" id="*d-Jm^MJXO]Djs(dTR*?" variabletype="">name</field>
-<field name="HANDLER_value" id="A6HQjH[k^X43o3h775+G" variabletype="">value</field>
-</block>
-<block type="radio_on_string" x="165" y="583">
-<field name="HANDLER_receivedString" id="V9KsE!h$(iO?%W:[32CV" variabletype="">receivedString</field>
-</block>
-*/
+    <block type="radio_on_packet" x="174" y="120">
+        <mutation callbackproperties="receivedNumber" renamemap="{}"></mutation>
+        <field name="receivedNumber">receivedNumber</field>
+    </block>
+    <block type="radio_on_packet" disabled="true" x="127" y="263">
+        <mutation callbackproperties="receivedString,receivedNumber" renamemap="{&quot;receivedString&quot;:&quot;name&quot;,&quot;receivedNumber&quot;:&quot;value&quot;}"></mutation>
+        <field name="receivedString">name</field>
+        <field name="receivedNumber">value</field>
+    </block>
+    <block type="radio_on_packet" disabled="true" x="162" y="420">
+        <mutation callbackproperties="receivedString" renamemap="{}"></mutation>
+        <field name="receivedString">receivedString</field>
+    </block>
+
+    converts to
+
+    <block type="radio_on_number" x="196" y="208">
+        <field name="HANDLER_receivedNumber" id="DCy(W;1)*jLWQUpoy4Mm" variabletype="">receivedNumber</field>
+    </block>
+    <block type="radio_on_value" x="134" y="408">
+        <field name="HANDLER_name" id="*d-Jm^MJXO]Djs(dTR*?" variabletype="">name</field>
+        <field name="HANDLER_value" id="A6HQjH[k^X43o3h775+G" variabletype="">value</field>
+    </block>
+    <block type="radio_on_string" x="165" y="583">
+        <field name="HANDLER_receivedString" id="V9KsE!h$(iO?%W:[32CV" variabletype="">receivedString</field>
+    </block>
+    */
     const varids: pxt.Map<string> = {};
 
     function addField(node: Element, renameMap: pxt.Map<string>, name: string) {
@@ -113,7 +439,7 @@ converts to
         node.appendChild(f);
     }
 
-    pxt.U.toArray(dom.querySelectorAll("variable")).forEach(node => varids[node.innerHTML] = node.getAttribute("id"));
+    pxt.U.toArray(dom.querySelectorAll("variable")).forEach(node => varids[node.textContent] = node.getAttribute("id"));
     pxt.U.toArray(dom.querySelectorAll("block[type=radio_on_packet]"))
         .forEach(node => {
             const mutation = node.querySelector("mutation");

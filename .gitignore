@@ -2,6 +2,7 @@ node_modules
 yotta_modules
 yotta_targets
 pxt_modules
+.pxt
 built
 typings
 tmp
@@ -19,6 +20,7 @@ electron-out
 hexcache
 build
 crowdinstats.csv
+libs/*/_locales/*.json
 
 *.user
 *.sw?
@@ -31,3 +33,8 @@ crowdinstats.csv
 .vscode/.BROWSE.VC.DB-wal
 package-lock.json
 .DS_Store
+# Local HTTPS cert (mkcert-generated)
+.pxt-https-cert/
+
+# Obeya settings are kept per machine, not in the repository
+.obeya/settings.json

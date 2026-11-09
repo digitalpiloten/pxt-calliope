@@ -43,7 +43,7 @@ music.onEvent(MusicEvent.BackgroundMelodyResumed, () => {
 music.onEvent(MusicEvent.BackgroundMelodyRepeated, () => {
     serial.writeLine("background repeated")
 })
-input.onButtonPressed(Button.A, () => {
+input.onButtonEvent(Button.A, input.buttonEventClick(), () => {
     music.beginMelody(music.builtInMelody(Melodies.BaDing), MelodyOptions.Once)
 })
 music.setTempo(100)
@@ -60,6 +60,6 @@ control.inBackground(function () {
     music.beginMelody(music.builtInMelody(Melodies.Entertainer), MelodyOptions.Once)
 })
 music.onEvent(MusicEvent.BackgroundMelodyStarted, function () {
-    basic.showIcon(IconNames.EigthNote)
+    basic.showIcon(IconNames.EighthNote)
 })
 ```

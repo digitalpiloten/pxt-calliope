@@ -26,7 +26,8 @@ code word from one of them to the others by pressing button `A`.  The
 other @boardname@s will receive the code word and then show it.
 
 ```blocks
-input.onButtonPressed(Button.A, () => {
+radio.setGroup(1)
+input.onButtonEvent(Button.A, input.buttonEventClick(), () => {
     radio.sendString("Codeword: TRIMARAN")
     basic.showString("SENT");
 })
@@ -46,5 +47,5 @@ A radio that can both transmit and receive is called a _transceiver_.
 [on received string](/reference/radio/on-received-string)
 
 ```package
-radio
+funk
 ```

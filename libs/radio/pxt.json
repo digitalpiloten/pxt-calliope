@@ -1,13 +1,11 @@
 {
-    "additionalFilePath": "../../node_modules/pxt-common-packages/libs/radio",
-    "icon": "./static/packages/radio/icon.png",
-    "yotta": {
-        "config": {
-            "microbit-dal": {
-                "bluetooth": {
-                    "enabled": 0
-                }
-            }
-        }
-    }
+    "name": "radio",
+    "description": "Legacy wrapper for Radio",
+    "dependencies": {
+        "core": "file:../funk"
+    },
+    "files": [
+    ],
+    "public": true,
+    "searchOnly": true
 }

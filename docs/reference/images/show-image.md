@@ -31,10 +31,10 @@ let arrows = images.createBigImage(`
     . . # . .   . # # # .
     . . # . .   . . # . .
     `);
-input.onButtonPressed(Button.A, () => {
+input.onButtonEvent(Button.A, input.buttonEventClick(), () => {
     arrows.showImage(0);
 });
-input.onButtonPressed(Button.B, () => {
+input.onButtonEvent(Button.B, input.buttonEventClick(), () => {
     arrows.showImage(5);
 });
 ```
@@ -44,4 +44,4 @@ input.onButtonPressed(Button.B, () => {
 [image](/reference/images/image),
 [create image](/reference/images/create-image),
 [create big image](/reference/images/create-big-image),
-[scroll image](/reference/images/scroll-image), [show animation](/reference/basic/show-animation)
+[scroll image](/reference/images/scroll-image)
